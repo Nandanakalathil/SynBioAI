@@ -4,8 +4,8 @@ This repository contains the inference scripts and documentation for deploying a
 
 ## Models Available
 
-| Model | Folder | Endpoint Name | Primary Task |
-|-------|--------|---------------|--------------|
+| Model | Folder | Endpoint Name | 
+|-------|--------|---------------|
 | **S3F** | `s3f/` | `s3f-endpoint-async-v3` |
 | **ESM Scan** | `esm-scan/` | `esm-scan-endpoint-async` | 
 | **ProSST** | `prosst/` | `prosst-inference-endpoint` | 
