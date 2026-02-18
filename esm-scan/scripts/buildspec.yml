@@ -1,0 +1,23 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR
+      - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+      - REGION=us-east-1
+      - REPO_NAME=esm-scan-repo
+      - IMAGE_URI=$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME
+      - aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com
+      - echo Logged in to ECR
+  build:
+    commands:
+      - echo Build started on `date`
+      - docker build -t $REPO_NAME .
+      - docker tag $REPO_NAME $IMAGE_URI:latest
+      - echo Build completed on `date`
+  post_build:
+    commands:
+      - echo Pushing Docker image to ECR
+      - docker push $IMAGE_URI:latest
+      - echo Push completed on `date`

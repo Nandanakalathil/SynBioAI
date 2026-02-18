@@ -1,0 +1,22 @@
+#!/bin/bash
+# SageMaker Entrypoint - starts the MMS model server
+echo "Starting ESM-Scan SageMaker inference server..."
+echo "NVIDIA GPU info:"
+nvidia-smi || echo "No GPU detected"
+echo "Python: $(python --version)"
+echo "PyTorch: $(python -c 'import torch; print(torch.__version__)')"
+echo "CUDA available: $(python -c 'import torch; print(torch.cuda.is_available())')"
+
+# Start the SageMaker inference server
+python -c "
+import subprocess, sys, os
+# Use sagemaker-inference toolkit
+from sagemaker_inference import model_server
+model_server.start_model_server(handler_service='/opt/ml/model/code/inference.py:handle')
+" 2>&1 || {
+    echo "Falling back to direct MMS start..."
+    multi-model-server --start \
+        --model-store /opt/ml/model \
+        --mms-config /etc/sagemaker-mms.properties \
+        --handler-service /opt/ml/model/code/inference.py:handle
+}
