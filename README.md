@@ -6,11 +6,11 @@ This repository contains the inference scripts and documentation for deploying a
 
 | Model | Folder | Endpoint Name | Primary Task |
 |-------|--------|---------------|--------------|
-| **S3F** | `s3f/` | `s3f-endpoint-async-v3` | Sequence, Structure, & Surface fitness scoring |
-| **ESM Scan** | `esm-scan/` | `esm-scan-endpoint-async` | Transformer-based variant effect prediction |
-| **ProSST** | `prosst/` | `prosst-inference-endpoint` | Structure-aware protein property prediction |
-| **DeepProzyme** | `deepec/` | `deepprozyme-endpoint` | Enzyme Commission (EC) number prediction |
-| **VespaG** | `vespag/` | `vespag-endpoint` | Fast variant consequence scoring |
+| **S3F** | `s3f/` | `s3f-endpoint-async-v3` |
+| **ESM Scan** | `esm-scan/` | `esm-scan-endpoint-async` | 
+| **ProSST** | `prosst/` | `prosst-inference-endpoint` | 
+| **DeepProzyme** | `deepec/` | `deepprozyme-endpoint` | 
+| **VespaG** | `vespag/` | `vespag-endpoint` | 
 
 ## Setup
 
