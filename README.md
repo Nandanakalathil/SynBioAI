@@ -20,9 +20,10 @@ This repository contains the inference scripts and documentation for deploying a
    ```
 
 2. **Configure AWS**:
+   Enter credentials when prompted (refer to credentials.txt)
+
    ```bash
    aws configure
-   (Enter credentials when prompted - refer to credentials.txt)
    ```
 ## General Management
 
