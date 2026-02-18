@@ -1,5 +1,4 @@
 #!/bin/bash
-# BIRAC SynBioAI - Interactive S3 Cleanup Script
 
 S3_BUCKET="synbioai-storage"
 PREFIX="async-inference/"
@@ -14,7 +13,6 @@ if [[ -z "$FILE_LIST" ]]; then
 fi
 
 echo "$FILE_LIST"
-echo "------------------------------------------------"
 COUNT=$(echo "$FILE_LIST" | wc -l | xargs)
 echo "Found $COUNT files in the async-inference folder."
 
