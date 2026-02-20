@@ -21,7 +21,6 @@ S3_PREFIX = "async-inference/esm-scan"
 REGION = "us-east-1"
 # ==========================================
 
-
 def safe_exit(msg):
     print(f"\nERROR: {msg}")
     sys.exit(1)
@@ -182,12 +181,17 @@ def main():
             print(f"Loaded {len(mutations)} specific mutations")
     else:
         total_possible = len(fasta_sequence) * 20
+        # Warn if full scan could be extremely large (e.g., > 200,000 mutations)
+        if total_possible > 200000:
+            print(f"WARNING: Full scan will evaluate {total_possible} mutations which may take a long time and cause timeout.")
+            print("Consider providing a mutations CSV file to limit the search or increase the timeout.")
         print(f"Full scan mode: will score all {total_possible} possible mutations")
 
     # 3. AWS clients
     try:
         s3 = boto3.client("s3", region_name=REGION)
         sm_runtime = boto3.client("sagemaker-runtime", region_name=REGION)
+        sm = boto3.client("sagemaker", region_name=REGION)
     except Exception as e:
         safe_exit(f"AWS client init failed → {e}")
 
