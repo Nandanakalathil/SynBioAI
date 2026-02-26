@@ -14,7 +14,6 @@ def test_alde_endpoint(csv_path, output_path="results_from_endpoint.csv", rounds
     sm_runtime = boto3.client('sagemaker-runtime')
     s3_client = boto3.client('s3')
     
-    # 1. Upload input CSV to S3
     file_name = os.path.basename(csv_path)
     s3_input_key = f"{s3_prefix}/{int(time.time())}_{file_name}"
     s3_input_uri = f"s3://{s3_bucket}/{s3_input_key}"
@@ -22,7 +21,6 @@ def test_alde_endpoint(csv_path, output_path="results_from_endpoint.csv", rounds
     print(f"Uploading {csv_path} to {s3_input_uri}...")
     s3_client.upload_file(csv_path, s3_bucket, s3_input_key)
     
-    # 2. Invoke Endpoint
     print(f"Invoking endpoint {endpoint_name}...")
     response = sm_runtime.invoke_endpoint_async(
         EndpointName=endpoint_name,
@@ -35,7 +33,6 @@ def test_alde_endpoint(csv_path, output_path="results_from_endpoint.csv", rounds
     output_location = response['OutputLocation']
     print(f"Inference started. Output will be at: {output_location}")
     
-    # 3. Poll for result
     print("Waiting for results (this may take 15-20 minutes for large datasets)...")
     output_bucket = output_location.split('/')[2]
     output_key = '/'.join(output_location.split('/')[3:])
@@ -54,7 +51,6 @@ def test_alde_endpoint(csv_path, output_path="results_from_endpoint.csv", rounds
                 print("\nTimeout waiting for response.")
                 return
 
-    # 4. Download and show results
     s3_client.download_file(output_bucket, output_key, output_path)
     
     df_results = pd.read_csv(output_path)
