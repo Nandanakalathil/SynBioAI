@@ -1,6 +1,6 @@
 # ESM Scan: Variant Effect Prediction
 
-ESM Scan uses the ESM-1v (single) transformer model to predict the functional impact of protein mutations. It supports both full-sequence scans and specific mutation scoring.
+ESM Scan uses the ESM-1v (single) transformer model with 650M parameters to predict the functional impact of protein mutations. It supports both full-sequence scans and specific mutation scoring.
 
 ## 1. Run Inference
 
