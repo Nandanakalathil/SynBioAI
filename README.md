@@ -11,6 +11,7 @@ This repository contains the inference scripts and documentation for deploying a
 | **ProSST** | `prosst/` | `prosst-inference-endpoint` | 
 | **DeepProzyme** | `deepec/` | `deepprozyme-endpoint` | 
 | **VespaG** | `vespag/` | `vespag-endpoint` | 
+| **ALDE** | `alde/` | `vespag-endpoint` | 
 
 ## Setup
 
