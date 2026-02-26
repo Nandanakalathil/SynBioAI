@@ -1,4 +1,4 @@
-# Omegafold: PlDDT score prediction in batch
+# Omegafold: PLDDT score prediction in batch
 
 Omegafold can predict plddt scores of protein sequences in batch.
 
