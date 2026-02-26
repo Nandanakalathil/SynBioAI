@@ -1,6 +1,6 @@
-# DeepProzyme: Enzyme Commission (EC) Number Prediction
+# Omegafold: PlDDT score prediction in batch
 
-DeepProzyme (DeepEC) predicts the EC numbers for protein sequences to help annotate enzymatic functions.
+Omegafold can predict plddt scores of protein sequences in batch.
 
 ## 1. Run Inference
 
