@@ -1,5 +1,5 @@
 # ALDE: Active Learning for Directed Evolution
-This directory contains the implementation and deployment scripts for **ALDE (Active Learning for Directed Evolution)**, as documented in the Nature Communications paper: [Active learning for directed evolution of enzymes](https://www.nature.com/articles/s41467-025-55987-8). ALDE recommends optimal protein sequences based on provided fitness data, efficiently guiding the search through large sequence spaces.
+This directory contains the implementation and deployment scripts for **ALDE (Active Learning for Directed Evolution)**. ALDE recommends optimal protein sequences based on provided fitness data, efficiently guiding the search through large sequence spaces.
 
 ## Running Inference
 Use the `alde_invoke.py` script to submit a CSV file and get recommendations. 
