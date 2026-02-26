@@ -1,4 +1,4 @@
-# ALDE Automation: One-Click Protein Optimization
+# ALDE 
 
 This repository provides a fully automated pipeline for running **Active Learning-assisted Directed Evolution (ALDE)** experiments on AWS EC2. It implements the "Best Brain" configuration (AA Encodings + DKL Model + Thompson Sampling).
 
