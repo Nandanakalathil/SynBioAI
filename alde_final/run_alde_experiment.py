@@ -10,6 +10,10 @@ EC2_USER = "ec2-user"
 LOCAL_SSH_KEY = os.path.expanduser("~/.ssh/id_ed25519.pub")
 
 ec2 = boto3.client('ec2', region_name=REGION)
+s3 = boto3.client('s3', region_name=REGION)
+
+BUCKET_NAME = "alde-sagemaker-data"
+S3_KEY_PREFIX = "simulation_results/"
 
 def get_instance_info():
     response = ec2.describe_instances(InstanceIds=[INSTANCE_ID])
@@ -34,33 +38,34 @@ def start_instance():
     if state == 'running':
         return ip
     
-    print(" Starting EC2 Instance (" + INSTANCE_ID + ")...")
+    print(f" Starting EC2 Instance ({INSTANCE_ID})...")
     ec2.start_instances(InstanceIds=[INSTANCE_ID])
     
     while True:
         state, ip = get_instance_info()
         if state == 'running' and ip:
-            print("Instance is LIVE at " + str(ip))
+            print(f"Instance is LIVE at {ip}")
             print("Waiting 30s for services...")
             time.sleep(30)
             return ip
         if state == 'stopped':
             ec2.start_instances(InstanceIds=[INSTANCE_ID])
-        print("   Current state: " + state + "...")
+        print(f"   Current state: {state}...")
         time.sleep(10)
 
 def stop_instance():
-    print("Stopping instance to save costs...")
     ec2.stop_instances(InstanceIds=[INSTANCE_ID])
 
-def scp_robust(local, remote, ip):
-    """Retries scp up to 3 times"""
+def scp_robust(src, dest, ip):
+    """Retries scp up to 3 times with quoted paths for safety"""
     for i in range(3):
         push_key()
-        cmd = "scp -o StrictHostKeyChecking=no -o ConnectTimeout=15 " + local + " " + EC2_USER + "@" + ip + ":" + remote
+        # Wrap paths in quotes to handle spaces/special chars
+        cmd = f'scp -o StrictHostKeyChecking=no -o ConnectTimeout=15 "{src}" "{dest}"'
         if subprocess.run(cmd, shell=True).returncode == 0:
+            time.sleep(1) # FS sync
             return True
-        print("    (SCP failed, retrying...)")
+        print(f"    (SCP failed for {os.path.basename(src)}, retrying...)")
         time.sleep(5)
     return False
 
@@ -68,11 +73,11 @@ def run_remote_op(ip, command, silent=False):
     with open("temp_remote_cmd.sh", "w") as f:
         f.write("#!/bin/bash\n" + command + "\n")
     
-    if not scp_robust("temp_remote_cmd.sh", "~/temp_remote_cmd.sh", ip):
+    if not scp_robust("temp_remote_cmd.sh", f"{EC2_USER}@{ip}:~/temp_remote_cmd.sh", ip):
         if os.path.exists("temp_remote_cmd.sh"): os.remove("temp_remote_cmd.sh")
         return False
     
-    ssh_cmd = "ssh -o StrictHostKeyChecking=no " + EC2_USER + "@" + ip + " 'bash ~/temp_remote_cmd.sh'"
+    ssh_cmd = f"ssh -o StrictHostKeyChecking=no {EC2_USER}@{ip} 'bash ~/temp_remote_cmd.sh'"
     if silent:
         result = subprocess.run(ssh_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         res = (result.returncode == 0)
@@ -80,7 +85,7 @@ def run_remote_op(ip, command, silent=False):
         print("  Executing command on EC2...")
         process = subprocess.Popen(ssh_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
         for line in process.stdout:
-            print("    [EC2] " + line.strip())
+            print(f"    [EC2] {line.strip()}")
         process.wait()
         res = (process.returncode == 0)
     
@@ -88,13 +93,23 @@ def run_remote_op(ip, command, silent=False):
     return res
 
 def upload_data(ip, local_path):
-    print(" Uploading dataset: " + local_path)
+    print(f" Uploading dataset: {local_path}")
     remote_dir = "/home/ec2-user/ALDE/data/custom_run"
-    run_remote_op(ip, "mkdir -p " + remote_dir + " && rm -f " + remote_dir + "/fitness.csv", silent=True)
-    if scp_robust(local_path, remote_dir + "/fitness.csv", ip):
+    run_remote_op(ip, f"mkdir -p {remote_dir} && rm -f {remote_dir}/fitness.csv", silent=True)
+    if scp_robust(local_path, f"{EC2_USER}@{ip}:{remote_dir}/fitness.csv", ip):
         print("Data uploaded successfully.")
         return True
     return False
+
+def upload_to_s3(local_file, s3_filename):
+    print(f" Uploading results to S3: s3://{BUCKET_NAME}/{S3_KEY_PREFIX}{s3_filename}")
+    try:
+        s3.upload_file(local_file, BUCKET_NAME, S3_KEY_PREFIX + s3_filename)
+        print(" S3 Upload SUCCESS!")
+        return True
+    except Exception as e:
+        print(f" S3 Upload Failed: {e}")
+        return False
 
 def main():
     import argparse
@@ -107,6 +122,8 @@ def main():
     output_csv = args.output
 
     print("\n--- ALDE AUTOMATION START ---")
+    print(f"LOCAL WORKING DIRECTORY: {os.getcwd()}")
+    print(f"INTENDED LOCAL OUTPUT: {os.path.abspath(output_csv)}")
     
     while True:
         state, _ = get_instance_info()
@@ -142,7 +159,6 @@ torch.save(X, 'data/custom_run/AA_x.pt')
         setup_enc_cmd = "cat > /home/ec2-user/ALDE/pre_encode.py << 'REF_EOF'\n" + encoding_script + "\nREF_EOF\n"
         run_remote_op(ip, setup_enc_cmd, silent=True)
         
-    print(" Syncing Best Brain logic (AA + DKL + TS)...")
     py_lines = [
         "from __future__ import annotations",
         "import argparse, numpy as np, pandas as pd, torch, random, os, time, warnings",
@@ -180,17 +196,40 @@ cat > /home/ec2-user/ALDE/run_logic_auto.sh << 'REF_EOF'
 #!/bin/bash
 source /home/ec2-user/miniconda3/etc/profile.d/conda.sh && conda activate alde
 cd /home/ec2-user/ALDE
+# Clean old results to avoid downloading ghost files from previous runs
+rm -f round_*.csv final_auto_results.csv simulation.log
 [ -f pre_encode.py ] && python pre_encode.py
 python execute_best_brain_auto.py 2>&1 | tee simulation.log
 /home/ec2-user/miniconda3/envs/alde/bin/python -s << 'PY_EOF'
-import torch, pandas as pd, os
+import torch, pandas as pd, os, math
 protein = '""" + protein_type + """'
 indices_path = f'results/best_brain_simulation/{protein}/AA/BEST_BRAIN_RUNindices.pt'
 if not os.path.exists(indices_path): exit(1)
+
+indices = torch.load(indices_path).long()
 df = pd.read_csv(f'data/{protein}/fitness.csv')
-res = df.iloc[torch.load(indices_path).long()]
-res = res.sort_values(by='fitness', ascending=False)
-res.to_csv('final_auto_results.csv', index=False)
+
+# 1. Track round assignments (batches of 96)
+batch_size = 96
+num_rounds = math.ceil(len(indices) / batch_size)
+round_assignment = {}
+for i, idx in enumerate(indices):
+    round_assignment[int(idx)] = (i // batch_size) + 1
+
+# 2. Save round-wise results (batches of 96)
+for r in range(1, num_rounds + 1):
+    end_idx = r * batch_size
+    round_indices = indices[:end_idx]
+    round_df = df.iloc[round_indices].copy()
+    round_df['Round'] = round_df.index.map(lambda x: round_assignment.get(x, r))
+    round_df = round_df.sort_values(by='fitness', ascending=False)
+    round_df.to_csv(f'round_{r}_results.csv', index=False)
+
+# 3. Save final complete result with Round column
+res_final = df.iloc[indices].copy()
+res_final['Round'] = res_final.index.map(lambda x: round_assignment.get(x, 0))
+res_final = res_final.sort_values(by='fitness', ascending=False)
+res_final.to_csv('final_auto_results.csv', index=False)
 PY_EOF
 REF_EOF
 chmod +x /home/ec2-user/ALDE/run_logic_auto.sh
@@ -204,12 +243,43 @@ chmod +x /home/ec2-user/ALDE/run_logic_auto.sh
 
     if run_remote_op(ip, "cd /home/ec2-user/ALDE && ./run_logic_auto.sh"):
         print("\n Simulation Complete! Downloading results...")
-        if scp_robust(EC2_USER + "@" + ip + ":/home/ec2-user/ALDE/final_auto_results.csv", output_csv, ip):
-            print(" SUCCESS! Saved to: " + os.path.abspath(output_csv))
+        
+        # Dynamically determine which rounds exist (up to a safe limit, e.g., 10)
+        potential_rounds = [f"round_{r}_results.csv" for r in range(1, 6)]
+        files_to_check = potential_rounds + ["final_auto_results.csv"]
+        
+        for remote_file in files_to_check:
+            if remote_file == "final_auto_results.csv":
+                local_file = os.path.abspath(output_csv)
+            else:
+                prefix = output_csv.replace(".csv", "")
+                local_file = os.path.abspath(f"{prefix}_{remote_file}")
+
+            remote_path = f"/home/ec2-user/ALDE/{remote_file}"
+            print(f"   Downloading {remote_file}...")
+            
+            os.makedirs(os.path.dirname(local_file), exist_ok=True)
+            
+            if scp_robust(f"{EC2_USER}@{ip}:{remote_path}", local_file, ip):
+                if os.path.exists(local_file) and os.path.getsize(local_file) > 0:
+                    print(f" SUCCESS! File verified at: {local_file}")
+                    upload_to_s3(local_file, os.path.basename(local_file))
+                else:
+                    print(f" WARNING: File is missing or empty at {local_file}")
+            elif remote_file == "final_auto_results.csv":
+                print(f" ERROR: Could not find final results on server.")
     else:
         print(" Simulation failed.")
 
+    print("Waiting 5s for disk sync...")
+    time.sleep(5)
     stop_instance()
+    
+    print("\n--- FINAL LOCAL FILE LIST ---")
+    current_dir = os.path.dirname(os.path.abspath(output_csv))
+    for f in os.listdir(current_dir):
+        if f.endswith(".csv"):
+            print(f" FOUND: {os.path.join(current_dir, f)}")
     print("--- ALDE AUTOMATION FINISHED ---\n")
 
 if __name__ == "__main__":
