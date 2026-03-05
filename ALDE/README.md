@@ -3,8 +3,6 @@
 ## Overview
 This folder contains the CLI and helper tools to interact with the **ALDE SageMaker Asynchronous Endpoint**. It uses a **DNN Ensemble + One-Hot Encoding + Thompson Sampling (TS)** to iteratively discover high-fitness protein variants.
 
-The workflow is designed to be highly automated: the client handles waking up the endpoint, streaming logs, syncing results from S3, and extracting the next batch of sequences for your lab.
-
 ---
 
 ## Workflow Guide
