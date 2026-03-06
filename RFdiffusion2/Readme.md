@@ -5,24 +5,30 @@ RoseTTAFold diffusion 2 (RFdiffusion2) design enzymes directly from functional g
 ## 1. Run Inference
 
 ```bash
-python3 invoke_async.py --input test.csv --output omegafold_results.zip
+python3 invoke_endpoint.py \
+    --local-pdbs 1qys.pdb \
+    --input-bucket filtarationmetrices \
+    --output-bucket filtarationmetrices \
+    --benchmark active_site_unindexed_atomic_partial_ligand \
+    --num-designs 1 \
+    --region us-east-1
 ```
 
 **Arguments:**
-- `-input`: Input csv file (one or more sequences).
-- `-output`: result saved in zip file.
+- `-local-pdbs`: Input pdb file (one or more sequences).
+  `output`: result will be saved in zip file.
 
 ## 2. Check Endpoint Status
 
 ```bash
-aws sagemaker describe-endpoint   --endpoint-name omegafold-async-endpoint   --region us-east-1   --query "ProductionVariants[0].CurrentInstanceCount"
+aws sagemaker describe-endpoint   --endpoint-name rfdiffusion2-async-endpoint   --region us-east-1   --query "ProductionVariants[0].CurrentInstanceCount"
 ```
 
 ## 3. Forcefully Scale to Zero
 
 ```bash
 aws sagemaker update-endpoint-weights-and-capacities \
---endpoint-name omegafold-async-endpoint \
+--endpoint-name rfdiffusion2-async-endpoint \
 --desired-weights-and-capacities '[{"VariantName":"AllTraffic","DesiredInstanceCount":0}]'
 ```
 
