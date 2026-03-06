@@ -107,21 +107,20 @@ case $COMMAND in
             OBJ_COL_CLEAN="${OBJ_COL:-Fitness}"
             LOCAL_CSV="${NAME}/data/${DATA_CSV}"
 
-            # If the local file exists, clean and normalize it in-place, then re-upload
+            # ── Rename column headers only (keep ALL rows) ──
             if [ -f "$LOCAL_CSV" ]; then
                 CLEAN_RESULT=$(python3 - <<PYEOF
 import csv, sys, os
 
 infile   = "$LOCAL_CSV"
 tmpfile  = infile + ".tmp"
-hint_col = "$OBJ_COL_CLEAN"   # user-supplied hint (may be empty or wrong case)
-dropped  = 0
+hint_col = "$OBJ_COL_CLEAN"
 
 with open(infile, newline='', encoding='utf-8-sig') as fin:
     reader = csv.DictReader(fin)
     orig_fields = reader.fieldnames or []
 
-    # ── 1. Find Combo column (Combo / Combos / any case) ──
+    # Find Combo column (Combo / Combos / any case)
     combo_col = None
     for f in orig_fields:
         if f.strip().lower().rstrip('s') == 'combo':
@@ -131,14 +130,12 @@ with open(infile, newline='', encoding='utf-8-sig') as fin:
         print("ERROR: no Combo/Combos column found", file=sys.stderr)
         sys.exit(1)
 
-    # ── 2. Find Fitness column (case-insensitive, also try hint) ──
+    # Find Fitness column (case-insensitive, also try hint)
     fitness_col = None
-    # First try exact hint
     for f in orig_fields:
         if f.strip().lower() == hint_col.strip().lower():
             fitness_col = f
             break
-    # Fall back: any column whose lowercase == 'fitness'
     if fitness_col is None:
         for f in orig_fields:
             if f.strip().lower() == 'fitness':
@@ -148,7 +145,7 @@ with open(infile, newline='', encoding='utf-8-sig') as fin:
         print("ERROR: no Fitness column found", file=sys.stderr)
         sys.exit(1)
 
-    # ── 3. Build new fieldnames (normalize to 'Combo', 'Fitness') ──
+    # Build renamed fieldnames
     new_fields = []
     for f in orig_fields:
         if f == combo_col:
@@ -160,39 +157,26 @@ with open(infile, newline='', encoding='utf-8-sig') as fin:
 
     rows = list(reader)
 
-# ── 4. Write cleaned + normalized CSV ──
+# Write ALL rows with renamed headers — nothing dropped
 with open(tmpfile, 'w', newline='') as fout:
     writer = csv.DictWriter(fout, fieldnames=new_fields)
     writer.writeheader()
     for row in rows:
-        # Rename keys to normalized names
         norm = {}
         for orig, new in zip(orig_fields, new_fields):
             norm[new] = row.get(orig, '')
-        val = norm.get('Fitness', '').strip()
-        try:
-            float(val)
-            writer.writerow(norm)
-        except ValueError:
-            dropped += 1
-            print(f"[clean] Skipping '{norm.get('Combo','')}' — Fitness='{val}'", file=sys.stderr)
+        writer.writerow(norm)
 
 os.replace(tmpfile, infile)
-# Output: dropped_count|resolved_fitness_col
-print(f"{dropped}|Fitness")
+print(f"0|Fitness")
 PYEOF
 )
                 CLEAN_STATUS=$?
                 if [ $CLEAN_STATUS -ne 0 ]; then
-                    echo "Warning: CSV normalization failed — using file as-is."
+                    echo "Warning: Column rename failed — using file as-is."
                 else
-                    CLEANED_COUNT=$(echo "$CLEAN_RESULT" | cut -d'|' -f1)
-                    OBJ_COL_RESOLVED=$(echo "$CLEAN_RESULT" | cut -d'|' -f2)
-                    OBJ_COL_CLEAN="$OBJ_COL_RESOLVED"   # always 'Fitness' after normalization
-                    if [ "${CLEANED_COUNT:-0}" -gt 0 ] 2>/dev/null; then
-                        echo "Cleaned $CLEANED_COUNT non-numeric row(s) from $DATA_CSV."
-                    fi
-                    echo "Re-uploading normalized CSV to S3..."
+                    OBJ_COL_CLEAN="Fitness"
+                    echo "Column headers normalized. Re-uploading to S3..."
                     "$AWS" s3 cp "$LOCAL_CSV" "s3://${BUCKET}/${PROJECT_S3}/data/${NAME}/${DATA_CSV}" > /dev/null
                 fi
             fi
