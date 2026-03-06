@@ -1,5 +1,4 @@
 #!/bin/bash
-# ALDE Cloud CLI (Dependency-Free)
 # Requirements: AWS CLI configured
 
 AWS="/usr/local/bin/aws"
