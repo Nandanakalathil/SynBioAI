@@ -1,6 +1,6 @@
-# Omegafold: PLDDT score prediction in batch
+# RFdiffusion2: Atom-level enzyme active site scaffolding using RFdiffusion2
 
-Omegafold can predict plddt scores of protein sequences in batch.
+RoseTTAFold diffusion 2 (RFdiffusion2) design enzymes directly from functional group geometries without specifying residue order or performing inverse rotamer generation
 
 ## 1. Run Inference
 
