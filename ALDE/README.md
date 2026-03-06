@@ -1,8 +1,3 @@
-# ALDE Cloud (Single-Script Mode)
-
-This setup is the **single-script** solution for protein engineering using the ALDE framework. All heavy computations are offloaded to an AWS SageMaker Asynchronous Endpoint.
-
-## 🚀 Key Commands
 
 ### 1. Initialize Project
 Generate the design space and variant combinations.
