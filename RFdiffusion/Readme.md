@@ -1,6 +1,6 @@
 # RFdiffusion: target-based protein and peptide design
 
-RoseTTAFold diffusion (RFdiffusion) design binder protein or peptide directly from target protein
+RoseTTAFold diffusion (RFdiffusion) design binder protein or peptide directly from the target protein
 
 ## 1. Run Inference
 This is for motif scaffolding:
@@ -37,4 +37,4 @@ aws sagemaker update-endpoint-weights-and-capacities \
 --desired-weights-and-capacities '[{"VariantName":"AllTraffic","DesiredInstanceCount":0}]'
 ```
 
-Note: The endpoint scales to zero automatically after 15 minutes of inactivity.
+Note: Scale the endpoint to zero automatically after using the inference.
