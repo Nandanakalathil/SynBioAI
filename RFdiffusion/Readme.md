@@ -1,6 +1,6 @@
 # RFdiffusion: target-based protein and peptide design
 
-RoseTTAFold diffusion (RFdiffusion) design enzymes directly from functional group geometries without specifying residue order or performing inverse rotamer generation
+RoseTTAFold diffusion (RFdiffusion) design binder protein or peptide directly from target protein
 
 ## 1. Run Inference
 This is for motif scaffolding:
