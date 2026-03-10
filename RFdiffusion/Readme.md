@@ -15,7 +15,7 @@ This is for binder design with hotspot:
 ```bash
 python3 test_rfdiffusion.py \
   --pdb ./5TPN.pdb \
-  --contigs "100-100/0 A20-35" \
+  --contigs "100-100/0 A30-35" \
   --num_designs 1 \
   --hotspot_res "A30,A33,A34"
 ```
