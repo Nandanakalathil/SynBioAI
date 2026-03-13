@@ -1,0 +1,35 @@
+# Install or update environment
+# conda env update --file alde.yml --prune
+#
+# Remove environment
+# conda remove --name alde --all
+#
+# last updated: 2022-12-13
+name: alde
+channels:
+- pytorch
+- nvidia
+- gpytorch
+- conda-forge
+dependencies:
+- python=3.11
+- flake8
+- ipykernel
+- logomaker
+- matplotlib
+- mypy=0.991
+- numpy
+- openpyxl
+- pandas=1.5
+- pip
+- pytorch=2.1.1
+- pytorch-cuda=12.1  # change this as needed
+- pyro-ppl=1.8.6
+- scipy
+- seaborn
+- tqdm
+- pip:
+  - gpytorch==1.11
+  - botorch==0.9.4
+  - xgboost #through pip
+  - fair-esm
