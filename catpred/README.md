@@ -39,6 +39,12 @@ Use the `-o` or `--output` flag to specify a custom filename for the results:
 python3.10 predict.py data.csv -o finalize_predictions.csv
 ```
 
+### Processing large files (Batching)
+For large datasets, use the `--batch-size` argument to split the work into smaller chunks (default is 500):
+```bash
+python3.10 predict.py data.csv --batch-size 200
+```
+
 ---
 
 ## Input CSV Format
