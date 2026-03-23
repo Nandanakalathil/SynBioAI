@@ -48,7 +48,6 @@ aws application-autoscaling register-scalable-target \
 
 ## 3. Forcefully Scale to one
 
-# SCALE TO 1 (ready to use)
 aws application-autoscaling register-scalable-target \
     --service-namespace sagemaker \
     --resource-id endpoint/proteinmpnn-async/variant/AllTraffic \
